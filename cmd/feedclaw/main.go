@@ -46,6 +46,12 @@ func rootCmd() *cobra.Command {
 		importCmd(),
 		feedsCmd(),
 		fetchCmd(),
+		unreadCmd(),
+		markCmd(),
+		starCmd(true),
+		starCmd(false),
+		fullCmd(),
+		searchCmd(),
 		doctorCmd(),
 	)
 	return root
