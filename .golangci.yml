@@ -7,6 +7,10 @@ linters:
     - bodyclose
     - misspell
   exclusions:
+    paths:
+      # The UI is a Node project; some npm packages vendor stray .go files
+      # (e.g. flatted) that are not part of this module.
+      - ui/
     rules:
       # Test files may ignore errors on best-effort setup helpers.
       - path: _test\.go
