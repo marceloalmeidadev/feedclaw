@@ -105,6 +105,39 @@ func TestFetchServerErrorIncrementsErrorCount(t *testing.T) {
 	}
 }
 
+func TestNewAppliesDefaults(t *testing.T) {
+	st, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+
+	f := New(st, Config{})
+	if f.client == nil || f.guard == nil || f.parser == nil {
+		t.Fatal("New must wire client, guard and parser")
+	}
+	if f.cfg.Workers != 8 || f.cfg.MaxFeedBytes != 2<<20 || f.cfg.MaxArticleBytes != 8<<20 {
+		t.Fatalf("defaults not applied: %+v", f.cfg)
+	}
+}
+
+func TestClientIsGuarded(t *testing.T) {
+	client, guard := Client(Config{})
+	if client == nil || guard == nil {
+		t.Fatal("Client must return a client and guard")
+	}
+	if guard.Mode != ModeRestricted {
+		t.Fatalf("default mode should be restricted, got %q", guard.Mode)
+	}
+	// The client refuses to reach a loopback listener (SSRF guard active).
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer srv.Close()
+	if resp, err := client.Get(srv.URL); err == nil {
+		_ = resp.Body.Close()
+		t.Fatal("guarded client should refuse loopback target")
+	}
+}
+
 func TestFetchByteLimit(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(sampleFeed))
