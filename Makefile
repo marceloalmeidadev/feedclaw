@@ -52,9 +52,9 @@ release: embed-ui ## Build the binary with the UI embedded (serves same-origin)
 
 package: release ## Assemble the installable OpenClaw bundle (binary + skills)
 	rm -rf $(BUNDLE)
-	mkdir -p $(BUNDLE)/scripts
+	mkdir -p $(BUNDLE)/scripts $(BUNDLE)/skills
 	cp $(BIN) $(BUNDLE)/feedclaw
-	cp -r skill/feedclaw skill/feedclaw-digest $(BUNDLE)/
+	cp -r skill/feedclaw skill/feedclaw-digest $(BUNDLE)/skills/
 	cp skill/scripts/feedclaw.sh $(BUNDLE)/scripts/feedclaw.sh
 	chmod +x $(BUNDLE)/feedclaw $(BUNDLE)/scripts/feedclaw.sh
 	cp docs/INSTALL.md $(BUNDLE)/INSTALL.md
