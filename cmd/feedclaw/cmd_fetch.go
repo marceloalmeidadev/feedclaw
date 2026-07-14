@@ -22,7 +22,7 @@ func fetchCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			var feeds []*store.Feed
 			if feedURL != "" {

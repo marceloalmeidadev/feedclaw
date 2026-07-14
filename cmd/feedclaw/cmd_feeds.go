@@ -28,7 +28,7 @@ func feedsListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 			feeds, err := st.ListFeeds()
 			if err != nil {
 				return err
@@ -37,9 +37,9 @@ func feedsListCmd() *cobra.Command {
 				return printJSON(feeds)
 			}
 			tw := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
-			fmt.Fprintln(tw, "ID\tTITLE\tCATEGORY\tERRORS\tURL")
+			_, _ = fmt.Fprintln(tw, "ID\tTITLE\tCATEGORY\tERRORS\tURL")
 			for _, f := range feeds {
-				fmt.Fprintf(tw, "%d\t%s\t%s\t%d\t%s\n", f.ID, truncate(f.Title, 40), f.Category, f.ErrorCount, f.URL)
+				_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\t%s\n", f.ID, truncate(f.Title, 40), f.Category, f.ErrorCount, f.URL)
 			}
 			return tw.Flush()
 		},
@@ -57,7 +57,7 @@ func feedsAddCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 			feed, created, err := st.AddFeed(args[0], "", "", category)
 			if err != nil {
 				return err
@@ -87,7 +87,7 @@ func feedsRemoveCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 			if err := st.RemoveFeed(args[0]); err != nil {
 				return err
 			}
@@ -117,7 +117,7 @@ func importCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			var added, existing int
 			for _, f := range feeds {
@@ -151,7 +151,7 @@ func loadOPML(src string) ([]opml.Feed, error) {
 		if err != nil {
 			return nil, fmt.Errorf("fetch opml: %w", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("fetch opml: status %d", resp.StatusCode)
 		}
@@ -161,7 +161,7 @@ func loadOPML(src string) ([]opml.Feed, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open opml: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	return opml.Parse(file)
 }
 

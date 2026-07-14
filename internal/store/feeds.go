@@ -73,7 +73,7 @@ func (s *Store) ListFeeds() ([]*Feed, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []*Feed
 	for rows.Next() {
 		f, err := scanFeed(rows)

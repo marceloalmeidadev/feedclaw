@@ -184,7 +184,7 @@ func (f *Fetcher) get(ctx context.Context, url, etag, lastMod string) (body []by
 	if err != nil {
 		return nil, 0, "", "", false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	status = resp.StatusCode
 	newETag = resp.Header.Get("ETag")

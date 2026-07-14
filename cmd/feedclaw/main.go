@@ -26,7 +26,7 @@ var (
 func main() {
 	fetch.Version = version
 	if err := rootCmd().Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 }

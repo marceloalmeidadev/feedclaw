@@ -19,7 +19,7 @@ func doctorCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer func() { _ = st.Close() }()
 
 			path, _ := dbPath()
 			feeds, err := st.ListFeeds()
