@@ -80,24 +80,27 @@ func (g *Guard) safeDialContext(dialTimeout time.Duration) func(context.Context,
 		if len(ips) == 0 {
 			return nil, fmt.Errorf("no addresses for %s", host)
 		}
-		var lastErr error
-		for _, ip := range ips {
-			if err := checkIP(ip.IP); err != nil {
-				lastErr = err
-				continue
-			}
-			conn, err := dialer.DialContext(ctx, network, net.JoinHostPort(ip.IP.String(), port))
-			if err != nil {
-				lastErr = err
-				continue
-			}
-			return conn, nil
-		}
-		if lastErr == nil {
-			lastErr = fmt.Errorf("no usable address for %s", host)
-		}
-		return nil, lastErr
+		return dialFirstAllowed(ctx, dialer, network, port, ips)
 	}
+}
+
+// dialFirstAllowed dials the first resolved address that passes checkIP, so a
+// hostname is only ever connected to a validated public IP.
+func dialFirstAllowed(ctx context.Context, dialer *net.Dialer, network, port string, ips []net.IPAddr) (net.Conn, error) {
+	lastErr := fmt.Errorf("no usable address")
+	for _, ip := range ips {
+		if err := checkIP(ip.IP); err != nil {
+			lastErr = err
+			continue
+		}
+		conn, err := dialer.DialContext(ctx, network, net.JoinHostPort(ip.IP.String(), port))
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		return conn, nil
+	}
+	return nil, lastErr
 }
 
 // checkIP rejects addresses that must never be reachable from the fetcher.

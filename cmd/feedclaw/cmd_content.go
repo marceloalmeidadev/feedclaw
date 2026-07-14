@@ -8,6 +8,7 @@ import (
 
 	"github.com/marceloalmeidadev/feedclaw/internal/fetch"
 	"github.com/marceloalmeidadev/feedclaw/internal/readability"
+	"github.com/marceloalmeidadev/feedclaw/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -22,38 +23,46 @@ func fullCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid article id %q", args[0])
 			}
-			st, err := openStore()
-			if err != nil {
-				return err
-			}
-			defer func() { _ = st.Close() }()
-
-			article, err := st.ArticleByID(id)
-			if err != nil {
-				return err
-			}
-
-			if article.FullContent == "" || force {
-				client, _ := fetch.Client(fetch.Config{})
-				html, err := readability.Extract(context.Background(), client, article.URL, 0)
-				if err != nil {
-					return fmt.Errorf("extract full content: %w", err)
-				}
-				if err := st.SetFullContent(id, html); err != nil {
-					return err
-				}
-				article.FullContent = html
-			}
-
-			if flagJSON {
-				return printJSON(article)
-			}
-			fmt.Printf("# %s\n%s\n\n%s\n", article.Title, article.URL, article.FullContent)
-			return nil
+			return runFull(id, force)
 		},
 	}
 	cmd.Flags().BoolVar(&force, "force", false, "re-extract even if already cached")
 	return cmd
+}
+
+func runFull(id int64, force bool) error {
+	return withStore(func(st *store.Store) error {
+		article, err := st.ArticleByID(id)
+		if err != nil {
+			return err
+		}
+		if article.FullContent == "" || force {
+			html, err := extractFull(article.URL)
+			if err != nil {
+				return err
+			}
+			if err := st.SetFullContent(id, html); err != nil {
+				return err
+			}
+			article.FullContent = html
+		}
+		if flagJSON {
+			return printJSON(article)
+		}
+		fmt.Printf("# %s\n%s\n\n%s\n", article.Title, article.URL, article.FullContent)
+		return nil
+	})
+}
+
+// extractFull downloads and reader-mode-extracts an article through the
+// SSRF-guarded client.
+func extractFull(url string) (string, error) {
+	client, _ := fetch.Client(fetch.Config{})
+	html, err := readability.Extract(context.Background(), client, url, 0)
+	if err != nil {
+		return "", fmt.Errorf("extract full content: %w", err)
+	}
+	return html, nil
 }
 
 func searchCmd() *cobra.Command {
@@ -63,24 +72,23 @@ func searchCmd() *cobra.Command {
 		Short: "Full-text search across articles (FTS5)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			query := strings.Join(args, " ")
-			st, err := openStore()
-			if err != nil {
-				return err
-			}
-			defer func() { _ = st.Close() }()
-
-			articles, err := st.Search(query, limit)
-			if err != nil {
-				return err
-			}
-			if flagJSON {
-				return printJSON(articles)
-			}
-			printArticleTable(articles)
-			return nil
+			return runSearch(strings.Join(args, " "), limit)
 		},
 	}
 	cmd.Flags().IntVar(&limit, "limit", 50, "maximum number of results")
 	return cmd
+}
+
+func runSearch(query string, limit int) error {
+	return withStore(func(st *store.Store) error {
+		articles, err := st.Search(query, limit)
+		if err != nil {
+			return err
+		}
+		if flagJSON {
+			return printJSON(articles)
+		}
+		printArticleTable(articles)
+		return nil
+	})
 }

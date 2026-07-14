@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/marceloalmeidadev/feedclaw/internal/opml"
+	"github.com/marceloalmeidadev/feedclaw/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -24,26 +25,28 @@ func feedsListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List all feeds",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			st, err := openStore()
-			if err != nil {
-				return err
-			}
-			defer func() { _ = st.Close() }()
-			feeds, err := st.ListFeeds()
-			if err != nil {
-				return err
-			}
-			if flagJSON {
-				return printJSON(feeds)
-			}
-			tw := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
-			_, _ = fmt.Fprintln(tw, "ID\tTITLE\tCATEGORY\tERRORS\tURL")
-			for _, f := range feeds {
-				_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\t%s\n", f.ID, truncate(f.Title, 40), f.Category, f.ErrorCount, f.URL)
-			}
-			return tw.Flush()
+			return withStore(func(st *store.Store) error {
+				feeds, err := st.ListFeeds()
+				if err != nil {
+					return err
+				}
+				if flagJSON {
+					return printJSON(feeds)
+				}
+				printFeedTable(feeds)
+				return nil
+			})
 		},
 	}
+}
+
+func printFeedTable(feeds []*store.Feed) {
+	tw := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
+	_, _ = fmt.Fprintln(tw, "ID\tTITLE\tCATEGORY\tERRORS\tURL")
+	for _, f := range feeds {
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\t%s\n", f.ID, truncate(f.Title, 40), f.Category, f.ErrorCount, f.URL)
+	}
+	_ = tw.Flush()
 }
 
 func feedsAddCmd() *cobra.Command {
@@ -53,24 +56,21 @@ func feedsAddCmd() *cobra.Command {
 		Short: "Add a feed by URL",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			st, err := openStore()
-			if err != nil {
-				return err
-			}
-			defer func() { _ = st.Close() }()
-			feed, created, err := st.AddFeed(args[0], "", "", category)
-			if err != nil {
-				return err
-			}
-			if flagJSON {
-				return printJSON(map[string]any{"feed": feed, "created": created})
-			}
-			if created {
-				fmt.Printf("added feed #%d: %s\n", feed.ID, feed.URL)
-			} else {
-				fmt.Printf("feed already present #%d: %s\n", feed.ID, feed.URL)
-			}
-			return nil
+			return withStore(func(st *store.Store) error {
+				feed, created, err := st.AddFeed(args[0], "", "", category)
+				if err != nil {
+					return err
+				}
+				if flagJSON {
+					return printJSON(map[string]any{"feed": feed, "created": created})
+				}
+				verb := "already present"
+				if created {
+					verb = "added feed"
+				}
+				fmt.Printf("%s #%d: %s\n", verb, feed.ID, feed.URL)
+				return nil
+			})
 		},
 	}
 	cmd.Flags().StringVar(&category, "category", "", "category/folder for the feed")
@@ -83,19 +83,16 @@ func feedsRemoveCmd() *cobra.Command {
 		Short: "Remove a feed and its articles",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			st, err := openStore()
-			if err != nil {
-				return err
-			}
-			defer func() { _ = st.Close() }()
-			if err := st.RemoveFeed(args[0]); err != nil {
-				return err
-			}
-			if flagJSON {
-				return printJSON(map[string]any{"removed": args[0]})
-			}
-			fmt.Printf("removed feed: %s\n", args[0])
-			return nil
+			return withStore(func(st *store.Store) error {
+				if err := st.RemoveFeed(args[0]); err != nil {
+					return err
+				}
+				if flagJSON {
+					return printJSON(map[string]any{"removed": args[0]})
+				}
+				fmt.Printf("removed feed: %s\n", args[0])
+				return nil
+			})
 		},
 	}
 }
@@ -109,38 +106,37 @@ func importCmd() *cobra.Command {
 			if opmlPath == "" {
 				return fmt.Errorf("--opml <path|url> is required")
 			}
-			feeds, err := loadOPML(opmlPath)
-			if err != nil {
-				return err
-			}
-			st, err := openStore()
-			if err != nil {
-				return err
-			}
-			defer func() { _ = st.Close() }()
-
-			var added, existing int
-			for _, f := range feeds {
-				_, created, err := st.AddFeed(f.XMLURL, f.Title, f.HTMLURL, f.Category)
-				if err != nil {
-					return fmt.Errorf("add %s: %w", f.XMLURL, err)
-				}
-				if created {
-					added++
-				} else {
-					existing++
-				}
-			}
-			result := map[string]any{"total": len(feeds), "added": added, "existing": existing}
-			if flagJSON {
-				return printJSON(result)
-			}
-			fmt.Printf("imported %d feeds (%d new, %d already present)\n", len(feeds), added, existing)
-			return nil
+			return runImport(opmlPath)
 		},
 	}
 	cmd.Flags().StringVar(&opmlPath, "opml", "", "path or URL to an OPML file")
 	return cmd
+}
+
+func runImport(opmlPath string) error {
+	feeds, err := loadOPML(opmlPath)
+	if err != nil {
+		return err
+	}
+	return withStore(func(st *store.Store) error {
+		var added, existing int
+		for _, f := range feeds {
+			_, created, err := st.AddFeed(f.XMLURL, f.Title, f.HTMLURL, f.Category)
+			if err != nil {
+				return fmt.Errorf("add %s: %w", f.XMLURL, err)
+			}
+			if created {
+				added++
+			} else {
+				existing++
+			}
+		}
+		if flagJSON {
+			return printJSON(map[string]any{"total": len(feeds), "added": added, "existing": existing})
+		}
+		fmt.Printf("imported %d feeds (%d new, %d already present)\n", len(feeds), added, existing)
+		return nil
+	})
 }
 
 // loadOPML reads an OPML document from a local path or an http(s) URL.

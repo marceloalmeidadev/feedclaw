@@ -5,7 +5,20 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/marceloalmeidadev/feedclaw/internal/store"
 )
+
+// withStore opens the database, runs fn with it and closes it afterwards. It
+// removes the open/defer-close boilerplate repeated by every command.
+func withStore(fn func(*store.Store) error) error {
+	st, err := openStore()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = st.Close() }()
+	return fn(st)
+}
 
 // parseDuration extends time.ParseDuration with day (d) and week (w) suffixes,
 // which the CLI accepts for --since/--older-than (e.g. "7d", "2w", "24h").

@@ -71,32 +71,54 @@ func (s *Store) migrate() error {
 	sort.Strings(names)
 
 	for _, name := range names {
-		var exists int
-		if err := s.db.QueryRow(`SELECT 1 FROM schema_migrations WHERE name = ?`, name).Scan(&exists); err == nil {
-			continue // already applied
-		} else if err != sql.ErrNoRows {
-			return fmt.Errorf("check migration %s: %w", name, err)
-		}
-
-		body, err := fs.ReadFile(feedclaw.Migrations, "migrations/"+name)
-		if err != nil {
-			return fmt.Errorf("read migration %s: %w", name, err)
-		}
-		tx, err := s.db.Begin()
+		applied, err := s.migrationApplied(name)
 		if err != nil {
 			return err
 		}
-		if _, err := tx.Exec(string(body)); err != nil {
-			_ = tx.Rollback()
-			return fmt.Errorf("apply migration %s: %w", name, err)
+		if applied {
+			continue
 		}
-		if _, err := tx.Exec(`INSERT INTO schema_migrations (name) VALUES (?)`, name); err != nil {
-			_ = tx.Rollback()
-			return fmt.Errorf("record migration %s: %w", name, err)
+		if err := s.applyMigration(name); err != nil {
+			return err
 		}
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit migration %s: %w", name, err)
-		}
+	}
+	return nil
+}
+
+// migrationApplied reports whether the named migration has already run.
+func (s *Store) migrationApplied(name string) (bool, error) {
+	var exists int
+	err := s.db.QueryRow(`SELECT 1 FROM schema_migrations WHERE name = ?`, name).Scan(&exists)
+	switch err {
+	case nil:
+		return true, nil
+	case sql.ErrNoRows:
+		return false, nil
+	default:
+		return false, fmt.Errorf("check migration %s: %w", name, err)
+	}
+}
+
+// applyMigration runs one migration file and records it, atomically.
+func (s *Store) applyMigration(name string) error {
+	body, err := fs.ReadFile(feedclaw.Migrations, "migrations/"+name)
+	if err != nil {
+		return fmt.Errorf("read migration %s: %w", name, err)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(string(body)); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("apply migration %s: %w", name, err)
+	}
+	if _, err := tx.Exec(`INSERT INTO schema_migrations (name) VALUES (?)`, name); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("record migration %s: %w", name, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit migration %s: %w", name, err)
 	}
 	return nil
 }
