@@ -1,6 +1,6 @@
 # FeedClaw
 
-Local RSS triage engine for [OpenClaw](https://github.com/marceloalmeidadev/feedclaw).
+Local RSS triage engine for [OpenClaw](https://docs.openclaw.ai).
 Single Go binary, state in SQLite, with a web UI (Nuxt) and an agent-facing CLI.
 
 FeedClaw replaces a "scan every headline, open the few that matter, let the rest
@@ -180,4 +180,4 @@ prerequisite are documented in
 
 ## License
 
-TBD.
+[MIT](LICENSE) © Marcelo Almeida.
