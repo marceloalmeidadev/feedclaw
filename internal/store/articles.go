@@ -29,6 +29,9 @@ func (s *Store) UpsertArticle(a *Article) (inserted bool, err error) {
 		return false, err
 	}
 	n, _ := res.RowsAffected()
+	if n > 0 {
+		a.ID, _ = res.LastInsertId()
+	}
 	return n > 0, nil
 }
 

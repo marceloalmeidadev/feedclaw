@@ -8,9 +8,10 @@ pile up" Feedly workflow with: a daily automated fetch, an LLM-grouped daily
 digest, drill-down by theme, and persistent read state — driven either
 conversationally through the OpenClaw agent or visually through the local UI.
 
-> **Status:** Phase 1 (engine core) — OPML import, feed management, the
-> concurrent SSRF-guarded fetcher, and diagnostics. Read state, digests, the
-> HTTP API and the UI arrive in later phases (see `docs/`).
+> **Status:** Phases 1–2 (engine core + read state). OPML import, feed
+> management, the concurrent SSRF-guarded fetcher, diagnostics, read/star state,
+> full-article extraction and full-text search. Digests, the HTTP API and the UI
+> arrive in later phases (see `docs/`).
 
 ## Architecture
 
@@ -30,27 +31,43 @@ make test       # go test ./...
 make vet lint   # static analysis
 ```
 
-## CLI (Phase 1 subset)
+## CLI
 
 Every command accepts `--json` for structured output (the agent always uses it).
 The database defaults to `$XDG_CONFIG_HOME/feedclaw/feedclaw.db`; override with
 `--db <path>` or the `FEEDCLAW_DB` environment variable.
 
 ```sh
+# Feeds & fetching
 feedclaw import --opml <path|url>      # import an OPML export (file or http/https URL)
 feedclaw feeds list [--json]
 feedclaw feeds add <url> [--category X]
 feedclaw feeds remove <url>
 feedclaw fetch [--feed <url>] [--workers 8]
+
+# Triage / read state
+feedclaw unread [--since 24h] [--category X] [--limit N] [--json]
+feedclaw mark read <id...> [--older-than 7d]
+feedclaw mark unread <id...>
+feedclaw star <id...>
+feedclaw unstar <id...>
+feedclaw full <id> [--force]           # reader-mode extraction (cached, SSRF-guarded)
+feedclaw search <query> [--limit N]    # FTS5 full-text search
+
 feedclaw doctor [--json]               # DB / feed health diagnostics
 ```
 
-Example:
+Durations accept `h`/`m`/`s` plus `d` (days) and `w` (weeks): `24h`, `7d`, `2w`.
+
+Example triage session:
 
 ```sh
 feedclaw import --opml feedly-export.opml
-feedclaw fetch --json
-feedclaw doctor
+feedclaw fetch
+feedclaw unread --since 24h
+feedclaw mark read 101 102 103
+feedclaw full 118
+feedclaw search "symfony messenger"
 ```
 
 ## Security (enforced from Phase 1)
