@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,10 +26,21 @@ var (
 
 func main() {
 	fetch.Version = version
-	if err := rootCmd().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
+	err := rootCmd().Execute()
+	if err == nil {
+		return
 	}
+	// An exitError carries a semantic process code (see exit.go). A nil inner
+	// error is a clean non-zero exit (e.g. "nothing new") — no "error:" line.
+	var ee *exitError
+	if errors.As(err, &ee) {
+		if ee.err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, "error:", ee.err)
+		}
+		os.Exit(ee.code)
+	}
+	_, _ = fmt.Fprintln(os.Stderr, "error:", err)
+	os.Exit(1)
 }
 
 func rootCmd() *cobra.Command {

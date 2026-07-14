@@ -51,7 +51,7 @@ feedclaw import --opml <path|url>      # import an OPML export (file or http/htt
 feedclaw feeds list [--json]
 feedclaw feeds add <url> [--category X]
 feedclaw feeds remove <url>
-feedclaw fetch [--feed <url>] [--workers 8]
+feedclaw fetch [--feed <url>] [--workers 8] [--report <path>]
 
 # Triage / read state
 feedclaw unread [--since 24h] [--category X] [--limit N] [--json]
@@ -76,6 +76,23 @@ the agent leaves out of a theme is collected into an engine-generated `Outros`
 already read at save time.
 
 Durations accept `h`/`m`/`s` plus `d` (days) and `w` (weeks): `24h`, `7d`, `2w`.
+
+`fetch` exits with a **semantic code** (the contract the OpenClaw on-exit
+pipeline reads) and always writes a JSON run report (`--report`, default
+`<config>/feedclaw/last_run.json`):
+
+| code | meaning |
+|---|---|
+| `0`  | new unread articles — proceed to the digest |
+| `10` | success, nothing new — don't wake the agent |
+| `20` | partial: some feeds failed, but there are new articles |
+| `30` | total failure: no feed reachable |
+| `40` | config / database inaccessible |
+| `50` | another fetch is already running (lockfile) |
+
+A concurrent `fetch` (e.g. a manual run during the cron, or the UI's
+`POST /api/fetch`) is refused with `50`; a stale lock from a dead process is
+reclaimed automatically.
 
 Example triage session:
 
