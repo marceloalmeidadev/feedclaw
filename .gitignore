@@ -4,6 +4,11 @@
 /feedclaw
 *.test
 
+# Coverage & SonarQube scanner artifacts
+coverage.out
+*.cover
+.scannerwork/
+
 # Local databases and scratch
 *.db
 *.db-wal
