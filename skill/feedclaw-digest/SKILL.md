@@ -6,6 +6,7 @@ description: >-
   agrupa os não-lidos em temas e salva o digest. Use quando disparado pelo cron
   do digest diário (não para pedidos conversacionais avulsos).
 homepage: https://github.com/marceloalmeidadev/feedclaw
+license: MIT
 metadata:
   openclaw:
     emoji: "🗞️"

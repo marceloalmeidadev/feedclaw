@@ -6,6 +6,7 @@ description: >-
   tema 2"), marcar um tema como lido, abrir/ler um artigo, ou buscar nos feeds.
   O fluxo de digest diário automático é o skill separado `feedclaw-digest`.
 homepage: https://github.com/marceloalmeidadev/feedclaw
+license: MIT
 metadata:
   openclaw:
     emoji: "🦅"
@@ -14,7 +15,7 @@ metadata:
     install:
       - id: go
         kind: go
-        module: github.com/marceloalmeidadev/feedclaw/cmd/feedclaw@latest
+        module: github.com/marceloalmeidadev/feedclaw/cmd/feedclaw@v0.1.0
         bins: ["feedclaw"]
         label: "Install feedclaw (go, CLI only)"
 ---
