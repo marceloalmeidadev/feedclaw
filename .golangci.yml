@@ -6,6 +6,19 @@ linters:
   enable:
     - bodyclose
     - misspell
+    - forbidigo
+  settings:
+    forbidigo:
+      # All outbound HTTP must go through internal/fetch, which applies the
+      # always-on SSRF guard, redirect-hop revalidation and byte limits. A raw
+      # net/http client bypasses every one of those.
+      forbid:
+        - pattern: 'http\.Client\{'
+          msg: "construct HTTP clients via internal/fetch (SSRF-guarded), not net/http directly"
+        - pattern: 'http\.(Get|Post|Head|PostForm)\('
+          msg: "use the SSRF-guarded internal/fetch client, not http.Get/Post"
+        - pattern: 'http\.DefaultClient'
+          msg: "do not use http.DefaultClient; build a guarded client via internal/fetch"
   exclusions:
     paths:
       # The UI is a Node project; some npm packages vendor stray .go files
@@ -16,6 +29,14 @@ linters:
       - path: _test\.go
         linters:
           - errcheck
+      # internal/fetch IS the guarded HTTP layer; it legitimately uses net/http.
+      # Tests may spin up httptest clients directly.
+      - path: internal/fetch/
+        linters:
+          - forbidigo
+      - path: _test\.go
+        linters:
+          - forbidigo
 
 formatters:
   enable:
