@@ -5,6 +5,18 @@ description: >-
   nos feeds/notícias, pedir o digest do dia, um tema específico ("me mostra o
   tema 2"), marcar um tema como lido, abrir/ler um artigo, ou buscar nos feeds.
   Também executa o fluxo de digest diário quando disparado pelo cron.
+homepage: https://github.com/marceloalmeidadev/feedclaw
+metadata:
+  openclaw:
+    emoji: "🦅"
+    requires:
+      bins: ["feedclaw"]
+    install:
+      - id: go
+        kind: go
+        module: github.com/marceloalmeidadev/feedclaw/cmd/feedclaw@latest
+        bins: ["feedclaw"]
+        label: "Install feedclaw (go, CLI only)"
 ---
 
 # FeedClaw — skill de triagem de RSS
