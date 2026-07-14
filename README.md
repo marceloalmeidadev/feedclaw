@@ -8,11 +8,11 @@ pile up" Feedly workflow with: a daily automated fetch, an LLM-grouped daily
 digest, drill-down by theme, and persistent read state — driven either
 conversationally through the OpenClaw agent or visually through the local UI.
 
-> **Status:** Phases 1–6 (engine + read state + digest + skill + API + UI).
-> OPML import, feed management, the concurrent SSRF-guarded fetcher, diagnostics,
-> read/star state, full-article extraction, full-text search, the theme-grouped
-> daily digest, the OpenClaw skill/cron, the local REST API, and the Nuxt web UI.
-> Binary embedding + packaging is Phase 7 (see `docs/`).
+> **Status:** Feature-complete (Phases 1–7). OPML import, feed management, the
+> concurrent SSRF-guarded fetcher, diagnostics, read/star state, full-article
+> extraction, full-text search, the theme-grouped daily digest, the OpenClaw
+> skill/cron, the local REST API, the Nuxt web UI embedded in the binary, and the
+> installable OpenClaw bundle. Install: [`docs/INSTALL.md`](docs/INSTALL.md).
 
 ## Architecture
 
@@ -27,10 +27,17 @@ conversationally through the OpenClaw agent or visually through the local UI.
 Requires Go 1.23+.
 
 ```sh
-make build      # -> bin/feedclaw
+make build      # -> bin/feedclaw (no embedded UI)
 make test       # go test ./...
 make vet lint   # static analysis
+make release    # build the UI and embed it into bin/feedclaw (-tags embedui)
+make package    # assemble the installable OpenClaw bundle (dist/) + checksums
 ```
+
+`make release` builds the Nuxt SPA and embeds it via `embed.FS`, so a single
+binary serves the UI and API same-origin. `make package` produces the installable
+bundle (`dist/feedclaw/` + `SHA256SUMS` + tarball) — see
+[`docs/INSTALL.md`](docs/INSTALL.md).
 
 ## CLI
 
