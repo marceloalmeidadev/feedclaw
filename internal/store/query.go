@@ -6,13 +6,16 @@ import (
 	"time"
 )
 
-// articleSelect joins feeds so listings can show feed title/category. Column
-// order must match scanArticle.
-const articleSelect = `SELECT
-	a.id, a.feed_id, a.guid, a.url, a.title, a.summary, a.content, a.full_content,
+// articleColumns is the article/feed column list; order must match scanArticle.
+const articleColumns = `a.id, a.feed_id, a.guid, a.url, a.title, a.summary, a.content, a.full_content,
 	a.author, a.published_at, a.fetched_at, a.read_at, a.starred,
-	f.title, f.category
-FROM articles a JOIN feeds f ON f.id = a.feed_id`
+	f.title, f.category`
+
+// articleFrom is the base FROM clause joining feeds for title/category.
+const articleFrom = `FROM articles a JOIN feeds f ON f.id = a.feed_id`
+
+// articleSelect is the full projection used by the fixed-shape listings.
+const articleSelect = `SELECT ` + articleColumns + ` ` + articleFrom
 
 type scanner interface{ Scan(...any) error }
 

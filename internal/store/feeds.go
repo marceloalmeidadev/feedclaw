@@ -97,6 +97,18 @@ func (s *Store) RemoveFeed(url string) error {
 	return nil
 }
 
+// RemoveFeedByID deletes a feed (and cascades its articles) by primary key.
+func (s *Store) RemoveFeedByID(id int64) error {
+	res, err := s.db.Exec(`DELETE FROM feeds WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // MarkFetchSuccess records a successful fetch: updates caching headers, status,
 // timestamp and resets the consecutive error counter.
 func (s *Store) MarkFetchSuccess(feedID int64, status int, etag, lastMod string) error {
