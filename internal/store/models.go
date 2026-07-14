@@ -39,3 +39,29 @@ type Article struct {
 	FeedTitle string `json:"feed_title,omitempty"`
 	Category  string `json:"category,omitempty"`
 }
+
+// Digest is a day's grouped view of the unread articles.
+type Digest struct {
+	ID          int64         `json:"id"`
+	Date        string        `json:"date"` // YYYY-MM-DD
+	GeneratedAt time.Time     `json:"generated_at"`
+	ModelNote   string        `json:"model_note,omitempty"`
+	Themes      []DigestTheme `json:"themes"`
+}
+
+// DigestTheme is one thematic group within a digest.
+type DigestTheme struct {
+	ID           int64      `json:"id"`
+	Position     int        `json:"position"`
+	Name         string     `json:"name"`
+	Summary      string     `json:"summary"`
+	ArticleCount int        `json:"article_count"`
+	Articles     []*Article `json:"articles,omitempty"` // populated by ThemeArticles
+}
+
+// ThemeInput is one theme as supplied to SaveDigest (before persistence).
+type ThemeInput struct {
+	Name       string
+	Summary    string
+	ArticleIDs []int64
+}
