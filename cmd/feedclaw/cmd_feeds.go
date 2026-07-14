@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"text/tabwriter"
-	"time"
 
+	"github.com/marceloalmeidadev/feedclaw/internal/fetch"
 	"github.com/marceloalmeidadev/feedclaw/internal/opml"
 	"github.com/marceloalmeidadev/feedclaw/internal/store"
 	"github.com/spf13/cobra"
@@ -139,10 +140,16 @@ func runImport(opmlPath string) error {
 	})
 }
 
-// loadOPML reads an OPML document from a local path or an http(s) URL.
+// maxOPMLBytes caps a remotely-fetched OPML document (a Feedly export with
+// hundreds of feeds is tens of KB); guards against a hostile oversized body.
+const maxOPMLBytes = 4 << 20
+
+// loadOPML reads an OPML document from a local path or an http(s) URL. Remote
+// fetches go through the SSRF-guarded client (blocks private/loopback targets,
+// revalidates redirect hops) and are byte-limited — never a raw http.Client.
 func loadOPML(src string) ([]opml.Feed, error) {
 	if u, err := url.Parse(src); err == nil && (u.Scheme == "http" || u.Scheme == "https") {
-		client := &http.Client{Timeout: 30 * time.Second}
+		client, _ := fetch.Client(fetch.Config{})
 		resp, err := client.Get(src)
 		if err != nil {
 			return nil, fmt.Errorf("fetch opml: %w", err)
@@ -151,7 +158,7 @@ func loadOPML(src string) ([]opml.Feed, error) {
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("fetch opml: status %d", resp.StatusCode)
 		}
-		return opml.Parse(resp.Body)
+		return opml.Parse(io.LimitReader(resp.Body, maxOPMLBytes))
 	}
 	file, err := os.Open(src)
 	if err != nil {
