@@ -21,12 +21,13 @@ const repoURL = "https://github.com/marceloalmeidadev/feedclaw"
 
 // Config tunes the fetcher. Zero values fall back to safe defaults.
 type Config struct {
-	Workers        int
-	ConnectTimeout time.Duration
-	RequestTimeout time.Duration
-	MaxFeedBytes   int64
-	SecurityMode   SecurityMode
-	AllowedHosts   []string
+	Workers         int
+	ConnectTimeout  time.Duration
+	RequestTimeout  time.Duration
+	MaxFeedBytes    int64
+	MaxArticleBytes int64
+	SecurityMode    SecurityMode
+	AllowedHosts    []string
 }
 
 func (c Config) withDefaults() Config {
@@ -42,7 +43,35 @@ func (c Config) withDefaults() Config {
 	if c.MaxFeedBytes <= 0 {
 		c.MaxFeedBytes = 2 << 20 // 2 MiB
 	}
+	if c.MaxArticleBytes <= 0 {
+		c.MaxArticleBytes = 8 << 20 // 8 MiB
+	}
 	return c
+}
+
+// newHTTPClient builds the SSRF-guarded HTTP client shared by the feed fetcher
+// and the article extractor.
+func newHTTPClient(cfg Config, guard *Guard) *http.Client {
+	transport := &http.Transport{
+		DialContext:           guard.safeDialContext(cfg.ConnectTimeout),
+		TLSHandshakeTimeout:   cfg.ConnectTimeout,
+		ResponseHeaderTimeout: cfg.RequestTimeout,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+	}
+	return &http.Client{
+		Timeout:       cfg.RequestTimeout,
+		Transport:     transport,
+		CheckRedirect: guard.checkRedirect,
+	}
+}
+
+// Client builds a standalone SSRF-guarded HTTP client from cfg. The readability
+// extractor uses it to download full article HTML through the same guard.
+func Client(cfg Config) (*http.Client, *Guard) {
+	cfg = cfg.withDefaults()
+	guard := NewGuard(cfg.SecurityMode, cfg.AllowedHosts)
+	return newHTTPClient(cfg, guard), guard
 }
 
 // Fetcher fetches and stores feeds.
@@ -58,23 +87,11 @@ type Fetcher struct {
 func New(st *store.Store, cfg Config) *Fetcher {
 	cfg = cfg.withDefaults()
 	guard := NewGuard(cfg.SecurityMode, cfg.AllowedHosts)
-	transport := &http.Transport{
-		DialContext:           guard.safeDialContext(cfg.ConnectTimeout),
-		TLSHandshakeTimeout:   cfg.ConnectTimeout,
-		ResponseHeaderTimeout: cfg.RequestTimeout,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-	}
-	client := &http.Client{
-		Timeout:       cfg.RequestTimeout,
-		Transport:     transport,
-		CheckRedirect: guard.checkRedirect,
-	}
 	return &Fetcher{
 		cfg:    cfg,
 		store:  st,
 		guard:  guard,
-		client: client,
+		client: newHTTPClient(cfg, guard),
 		parser: gofeed.NewParser(),
 	}
 }
