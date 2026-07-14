@@ -28,6 +28,7 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /api/feeds", s.listFeeds)
 	mux.HandleFunc("POST /api/feeds", s.addFeed)
+	mux.HandleFunc("POST /api/feeds/import", s.importFeeds)
 	mux.HandleFunc("DELETE /api/feeds/{id}", s.deleteFeed)
 
 	mux.HandleFunc("POST /api/fetch", s.runFetch)
