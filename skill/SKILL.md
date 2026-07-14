@@ -63,7 +63,7 @@ Execute nesta ordem:
      (cobertura total garantida).
 4. **Salvar o digest.** Monte o JSON (formato abaixo) e envie por stdin:
    ```sh
-   feedclaw digest save --date "$(date -u +%F)" --input - <<'JSON'
+   feedclaw digest save --date "$(date +%F)" --input - <<'JSON'
    {
      "date": "2026-07-14",
      "model_note": "openclaw/<modelo>",
