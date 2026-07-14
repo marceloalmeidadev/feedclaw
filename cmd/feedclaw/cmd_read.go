@@ -78,30 +78,42 @@ func runMarkRead(args []string, olderThan string) error {
 	if err != nil {
 		return err
 	}
-	var age time.Duration
-	if olderThan != "" {
-		if age, err = parseDuration(olderThan); err != nil {
-			return err
-		}
+	age, err := optionalDuration(olderThan)
+	if err != nil {
+		return err
 	}
 	return withStore(func(st *store.Store) error {
-		var affected int64
-		if age > 0 {
-			n, err := st.MarkReadOlderThan(age)
-			if err != nil {
-				return err
-			}
-			affected += n
-		}
-		if len(ids) > 0 {
-			n, err := st.SetRead(ids, true)
-			if err != nil {
-				return err
-			}
-			affected += n
-		}
-		return reportAffected(affected, "marked read")
+		return applyMarkRead(st, ids, age)
 	})
+}
+
+// optionalDuration parses a duration flag that may be empty (meaning "unset").
+func optionalDuration(s string) (time.Duration, error) {
+	if s == "" {
+		return 0, nil
+	}
+	return parseDuration(s)
+}
+
+// applyMarkRead marks the older-than window and the explicit ids as read,
+// summing how many rows were affected.
+func applyMarkRead(st *store.Store, ids []int64, age time.Duration) error {
+	var affected int64
+	if age > 0 {
+		n, err := st.MarkReadOlderThan(age)
+		if err != nil {
+			return err
+		}
+		affected += n
+	}
+	if len(ids) > 0 {
+		n, err := st.SetRead(ids, true)
+		if err != nil {
+			return err
+		}
+		affected += n
+	}
+	return reportAffected(affected, "marked read")
 }
 
 func markUnreadCmd() *cobra.Command {
