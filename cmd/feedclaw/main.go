@@ -52,6 +52,8 @@ func rootCmd() *cobra.Command {
 		starCmd(false),
 		fullCmd(),
 		searchCmd(),
+		digestCmd(),
+		themeCmd(),
 		doctorCmd(),
 	)
 	return root

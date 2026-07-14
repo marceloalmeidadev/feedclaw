@@ -58,21 +58,25 @@ func markCmd() *cobra.Command {
 }
 
 func markReadCmd() *cobra.Command {
-	var olderThan string
+	var (
+		olderThan  string
+		allInTheme int64
+	)
 	cmd := &cobra.Command{
 		Use:   "read [article-id...]",
-		Short: "Mark articles as read (by id, or --older-than)",
+		Short: "Mark articles as read (by id, --older-than or --all-in-theme)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMarkRead(args, olderThan)
+			return runMarkRead(args, olderThan, allInTheme)
 		},
 	}
 	cmd.Flags().StringVar(&olderThan, "older-than", "", "mark all unread articles older than this (e.g. 7d)")
+	cmd.Flags().Int64Var(&allInTheme, "all-in-theme", 0, "mark every unread article in this theme id as read")
 	return cmd
 }
 
-func runMarkRead(args []string, olderThan string) error {
-	if olderThan == "" && len(args) == 0 {
-		return fmt.Errorf("provide article ids or --older-than")
+func runMarkRead(args []string, olderThan string, allInTheme int64) error {
+	if olderThan == "" && len(args) == 0 && allInTheme == 0 {
+		return fmt.Errorf("provide article ids, --older-than or --all-in-theme")
 	}
 	ids, err := parseIDs(args)
 	if err != nil {
@@ -83,7 +87,7 @@ func runMarkRead(args []string, olderThan string) error {
 		return err
 	}
 	return withStore(func(st *store.Store) error {
-		return applyMarkRead(st, ids, age)
+		return applyMarkRead(st, ids, age, allInTheme)
 	})
 }
 
@@ -95,10 +99,17 @@ func optionalDuration(s string) (time.Duration, error) {
 	return parseDuration(s)
 }
 
-// applyMarkRead marks the older-than window and the explicit ids as read,
-// summing how many rows were affected.
-func applyMarkRead(st *store.Store, ids []int64, age time.Duration) error {
+// applyMarkRead marks the theme, the older-than window and the explicit ids as
+// read, summing how many rows were affected.
+func applyMarkRead(st *store.Store, ids []int64, age time.Duration, themeID int64) error {
 	var affected int64
+	if themeID > 0 {
+		n, err := st.MarkReadAllInTheme(themeID)
+		if err != nil {
+			return err
+		}
+		affected += n
+	}
 	if age > 0 {
 		n, err := st.MarkReadOlderThan(age)
 		if err != nil {
