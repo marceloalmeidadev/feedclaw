@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// indexHTML is the SPA entry document (also the directory index).
+const indexHTML = "index.html"
+
 // embeddedUI is nil unless the binary is built with -tags embedui (see
 // ui_embed.go), in which case it holds the generated SPA. Serving the UI from
 // the same origin as the API is why the API needs no CORS.
@@ -24,12 +27,12 @@ func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
 	}
 	name := strings.TrimPrefix(path.Clean("/"+r.URL.Path), "/")
 	if name == "" {
-		name = "index.html"
+		name = indexHTML
 	}
 	if serveFile(w, r, s.ui, name) {
 		return
 	}
-	for _, shell := range []string{"200.html", "index.html"} {
+	for _, shell := range []string{"200.html", indexHTML} {
 		if serveFile(w, r, s.ui, shell) {
 			return
 		}
@@ -51,7 +54,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fsys fs.FS, name string) 
 		return false
 	}
 	if info.IsDir() {
-		return serveFile(w, r, fsys, path.Join(name, "index.html"))
+		return serveFile(w, r, fsys, path.Join(name, indexHTML))
 	}
 	rs, ok := f.(io.ReadSeeker)
 	if !ok {
