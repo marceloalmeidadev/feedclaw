@@ -143,20 +143,24 @@ func runTheme(id int64) error {
 		if flagJSON {
 			return printJSON(theme)
 		}
-		fmt.Printf("Theme #%d — %s\n%s\n\n", theme.ID, theme.Name, theme.Summary)
+		fmt.Printf("Tema #%d — %s\n%s\n\n", theme.ID, theme.Name, theme.Summary)
 		printArticleTable(articles)
 		return nil
 	})
 }
 
-// printDigest renders a digest as a themed overview.
+// printDigest renders a digest as a themed overview (pt-BR).
 func printDigest(d *store.Digest) {
-	fmt.Printf("Digest %s (generated %s)\n\n", d.Date, d.GeneratedAt.Format("2006-01-02 15:04"))
+	header := "Notícias de " + d.Date
+	if d.Date == today() {
+		header = "Notícias para hoje (" + d.Date + ")"
+	}
+	fmt.Printf("%s — gerado %s\n\n", header, d.GeneratedAt.Format("02/01/2006 15:04"))
 	for _, t := range d.Themes {
-		fmt.Printf("[%d] %s  (theme #%d, %d articles)\n", t.Position, t.Name, t.ID, t.ArticleCount)
+		fmt.Printf("[%d] %s  (tema #%d, %d artigo(s))\n", t.Position, t.Name, t.ID, t.ArticleCount)
 		if t.Summary != "" {
 			fmt.Printf("    %s\n", t.Summary)
 		}
 	}
-	fmt.Printf("\nRun 'feedclaw theme <theme-id>' to list a theme's articles.\n")
+	fmt.Printf("\nUse 'feedclaw theme <id>' para ver os artigos de um tema.\n")
 }
