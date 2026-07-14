@@ -32,21 +32,20 @@ cd dist
 sha256sum -c SHA256SUMS
 ```
 
-## 3. Install as an OpenClaw skill
+## 3. Install the skills into OpenClaw
 
-Copy the bundle into your OpenClaw skills directory:
-
-```sh
-mkdir -p ~/.openclaw/skills
-cp -r dist/feedclaw ~/.openclaw/skills/feedclaw
-```
-
-The skill's wrapper (`scripts/feedclaw.sh`) resolves the binary sitting next to
-it, so no `PATH` changes are needed. To use `feedclaw` directly from a shell,
-optionally symlink it:
+FeedClaw ships **two** skills: `feedclaw` (conversational) and `feedclaw-digest`
+(the on-exit daily flow). Put the `feedclaw` binary on your `PATH` (the skills
+declare `requires.bins: [feedclaw]`), then install both skills:
 
 ```sh
-ln -sf ~/.openclaw/skills/feedclaw/feedclaw ~/.local/bin/feedclaw
+# binary on PATH
+install -m755 dist/feedclaw/feedclaw ~/.local/bin/feedclaw
+
+# both skills
+openclaw skills install dist/feedclaw/feedclaw        --as feedclaw        --global
+openclaw skills install dist/feedclaw/feedclaw-digest --as feedclaw-digest --global
+openclaw skills check          # both should be "Ready"
 ```
 
 ## 4. First run
@@ -60,12 +59,17 @@ feedclaw serve                                     # http://127.0.0.1:8484 (UI +
 The database is created at `$XDG_CONFIG_HOME/feedclaw/feedclaw.db`
 (override with `--db` or `FEEDCLAW_DB`).
 
-## 5. Daily digest via cron
+## 5. Daily digest via cron (on-exit pipeline)
 
-```sh
-openclaw cron add --name feedclaw-digest --schedule "0 7 * * *" \
-  --task "Execute o fluxo de digest diário do FeedClaw conforme o SKILL.md"
-```
+The daily digest runs as two halves: a scheduled, deterministic `feedclaw fetch`
+(no LLM), and an agent turn woken when it exits — which reads the run report and
+only clusters/saves when there is something new. The exact cron commands, the
+exit-code contract, `utilityModel` tiering and the operator-scope prerequisite
+are documented in **[`openclaw-integration.md`](openclaw-integration.md)**.
+
+Creating cron jobs requires the local CLI to hold `operator.write` — until you
+grant that (`openclaw dashboard`), run the digest manually: ask the agent to
+"gerar o digest de hoje", or invoke the `feedclaw-digest` flow directly.
 
 ## Notes
 
