@@ -19,8 +19,10 @@ The bundle (`dist/feedclaw/`) contains:
 
 ```
 feedclaw/
-├── feedclaw          # the binary (UI embedded)
-├── SKILL.md          # the OpenClaw skill
+├── feedclaw                     # the binary (UI embedded)
+├── skills/
+│   ├── feedclaw/SKILL.md        # conversational skill
+│   └── feedclaw-digest/SKILL.md # daily on-exit digest skill
 ├── scripts/feedclaw.sh
 └── INSTALL.md
 ```
@@ -43,8 +45,8 @@ declare `requires.bins: [feedclaw]`), then install both skills:
 install -m755 dist/feedclaw/feedclaw ~/.local/bin/feedclaw
 
 # both skills
-openclaw skills install dist/feedclaw/feedclaw        --as feedclaw        --global
-openclaw skills install dist/feedclaw/feedclaw-digest --as feedclaw-digest --global
+openclaw skills install dist/feedclaw/skills/feedclaw        --as feedclaw        --global
+openclaw skills install dist/feedclaw/skills/feedclaw-digest --as feedclaw-digest --global
 openclaw skills check          # both should be "Ready"
 ```
 
