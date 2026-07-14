@@ -8,10 +8,10 @@ pile up" Feedly workflow with: a daily automated fetch, an LLM-grouped daily
 digest, drill-down by theme, and persistent read state — driven either
 conversationally through the OpenClaw agent or visually through the local UI.
 
-> **Status:** Phases 1–2 (engine core + read state). OPML import, feed
+> **Status:** Phases 1–3 (engine core + read state + digest). OPML import, feed
 > management, the concurrent SSRF-guarded fetcher, diagnostics, read/star state,
-> full-article extraction and full-text search. Digests, the HTTP API and the UI
-> arrive in later phases (see `docs/`).
+> full-article extraction, full-text search and the theme-grouped daily digest.
+> The HTTP API and the UI arrive in later phases (see `docs/`).
 
 ## Architecture
 
@@ -47,15 +47,25 @@ feedclaw fetch [--feed <url>] [--workers 8]
 
 # Triage / read state
 feedclaw unread [--since 24h] [--category X] [--limit N] [--json]
-feedclaw mark read <id...> [--older-than 7d]
+feedclaw mark read <id...> [--older-than 7d] [--all-in-theme <theme-id>]
 feedclaw mark unread <id...>
 feedclaw star <id...>
 feedclaw unstar <id...>
 feedclaw full <id> [--force]           # reader-mode extraction (cached, SSRF-guarded)
 feedclaw search <query> [--limit N]    # FTS5 full-text search
 
+# Daily digest (themes are grouped by the agent; see skill/)
+feedclaw digest save --date YYYY-MM-DD --input <json|->  # agent writes the grouping
+feedclaw digest show [--date YYYY-MM-DD] [--json]        # today, or a given/most-recent date
+feedclaw theme <theme-id> [--json]                       # all articles in a theme
+
 feedclaw doctor [--json]               # DB / feed health diagnostics
 ```
+
+The engine guarantees the digest covers every unread article: any unread article
+the agent leaves out of a theme is collected into an engine-generated `Outros`
+(residual) theme. `digest save` rejects article ids that don't exist or are
+already read at save time.
 
 Durations accept `h`/`m`/`s` plus `d` (days) and `w` (weeks): `24h`, `7d`, `2w`.
 
