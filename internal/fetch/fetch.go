@@ -110,7 +110,6 @@ func (f *Fetcher) Run(ctx context.Context, feeds []*store.Feed) ([]Result, error
 	g.SetLimit(f.cfg.Workers)
 
 	for i, feed := range feeds {
-		i, feed := i, feed
 		g.Go(func() error {
 			results[i] = f.fetchAndStore(ctx, feed)
 			return nil // errors are captured per-result, never fail the group
