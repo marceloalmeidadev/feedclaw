@@ -17,7 +17,11 @@ func digestCmd() *cobra.Command {
 	return cmd
 }
 
-func today() string { return time.Now().UTC().Format("2006-01-02") }
+// today returns the current date in the machine's LOCAL timezone. Using UTC
+// would roll the date over in the evening for users west of Greenwich (e.g.
+// UTC−3), so "hoje" and the default digest date must follow local time. The
+// SKILL.md accordingly uses `date +%F` (not `date -u`).
+func today() string { return time.Now().Local().Format("2006-01-02") }
 
 func digestSaveCmd() *cobra.Command {
 	var (

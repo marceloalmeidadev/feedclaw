@@ -168,9 +168,12 @@ func loadOPML(src string) ([]opml.Feed, error) {
 	return opml.Parse(file)
 }
 
+// truncate shortens s to at most n runes (not bytes) so multibyte characters —
+// common in pt-BR titles — are never cut mid-character into invalid UTF-8.
 func truncate(s string, n int) string {
-	if len(s) <= n {
+	r := []rune(s)
+	if len(r) <= n {
 		return s
 	}
-	return strings.TrimSpace(s[:n-1]) + "…"
+	return strings.TrimSpace(string(r[:n-1])) + "…"
 }

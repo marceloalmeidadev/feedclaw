@@ -39,7 +39,7 @@ func rootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.PersistentFlags().StringVar(&flagDB, "db", "", "path to the SQLite database (default: XDG data dir)")
+	root.PersistentFlags().StringVar(&flagDB, "db", "", "path to the SQLite database (default: XDG config dir, e.g. ~/.config/feedclaw)")
 	root.PersistentFlags().BoolVar(&flagJSON, "json", false, "structured JSON output")
 
 	root.AddCommand(
@@ -74,7 +74,7 @@ func openStore() (*store.Store, error) {
 }
 
 // dbPath returns the effective database path, honoring --db then FEEDCLAW_DB
-// then the XDG data directory.
+// then the XDG config directory (os.UserConfigDir, e.g. ~/.config).
 func dbPath() (string, error) {
 	if flagDB != "" {
 		return flagDB, nil
