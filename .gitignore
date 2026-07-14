@@ -1,0 +1,21 @@
+# Build output
+/bin/
+/dist/
+/feedclaw
+*.test
+
+# Local databases and scratch
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+
+# UI build artifacts (embedded at package time)
+/ui/node_modules/
+/ui/.output/
+/ui/.nuxt/
+/ui/.data/
+
+# Editor / OS
+.DS_Store
+*.swp
