@@ -24,3 +24,6 @@ coverage.out
 # Editor / OS
 .DS_Store
 *.swp
+
+# Bundled engine binary (placed at package time, Phase 7)
+/skill/feedclaw
