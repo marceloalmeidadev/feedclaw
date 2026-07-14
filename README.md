@@ -8,10 +8,11 @@ pile up" Feedly workflow with: a daily automated fetch, an LLM-grouped daily
 digest, drill-down by theme, and persistent read state — driven either
 conversationally through the OpenClaw agent or visually through the local UI.
 
-> **Status:** Phases 1–3 (engine core + read state + digest). OPML import, feed
-> management, the concurrent SSRF-guarded fetcher, diagnostics, read/star state,
-> full-article extraction, full-text search and the theme-grouped daily digest.
-> The HTTP API and the UI arrive in later phases (see `docs/`).
+> **Status:** Phases 1–5 (engine core + read state + digest + OpenClaw skill +
+> HTTP API). OPML import, feed management, the concurrent SSRF-guarded fetcher,
+> diagnostics, read/star state, full-article extraction, full-text search, the
+> theme-grouped daily digest, the OpenClaw skill/cron, and the local REST API.
+> The Nuxt UI arrives in Phase 6 (see `docs/`).
 
 ## Architecture
 
@@ -78,6 +79,28 @@ feedclaw unread --since 24h
 feedclaw mark read 101 102 103
 feedclaw full 118
 feedclaw search "symfony messenger"
+```
+
+## HTTP API
+
+`feedclaw serve [--port 8484]` starts a REST API bound **exclusively to
+127.0.0.1** (never `0.0.0.0`). It is the same source of truth as the CLI, and
+(from Phase 6) serves the embedded UI. Errors use a standard envelope
+`{"error": {"code", "message"}}`.
+
+```
+GET    /api/feeds
+POST   /api/feeds                 {url, category}
+DELETE /api/feeds/{id}
+POST   /api/fetch                 # synchronous fetch; returns per-feed results
+GET    /api/articles?status=unread&category=&theme=&q=&page=&per_page=
+GET    /api/articles/{id}
+POST   /api/articles/{id}/full    # force reader-mode extraction (SSRF-guarded)
+PATCH  /api/articles/read         {ids: [...], read: true|false}
+PATCH  /api/articles/star         {ids: [...], starred: true|false}
+GET    /api/digests?date=         # given date, else most recent
+GET    /api/digests/{date}/themes/{themeId}/articles
+GET    /api/stats                 # unread total, per-category, starred (badges)
 ```
 
 ## OpenClaw integration
