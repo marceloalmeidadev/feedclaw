@@ -1,0 +1,26 @@
+# Build output
+/bin/
+/dist/
+/feedclaw
+*.test
+
+# Coverage & SonarQube scanner artifacts
+coverage.out
+*.cover
+.scannerwork/
+
+# Local databases and scratch
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+
+# UI build artifacts (embedded at package time)
+/ui/node_modules/
+/ui/.output/
+/ui/.nuxt/
+/ui/.data/
+
+# Editor / OS
+.DS_Store
+*.swp

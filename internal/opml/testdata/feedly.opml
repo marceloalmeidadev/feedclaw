@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>Feedly Export</title>
+  </head>
+  <body>
+    <outline text="Go" title="Go">
+      <outline type="rss" text="The Go Blog" title="The Go Blog"
+        xmlUrl="https://go.dev/blog/feed.atom" htmlUrl="https://go.dev/blog"/>
+      <outline type="rss" text="Dave Cheney" title="Dave Cheney"
+        xmlUrl="https://dave.cheney.net/feed" htmlUrl="https://dave.cheney.net"/>
+    </outline>
+    <outline text="PHP &amp; Symfony" title="PHP &amp; Symfony">
+      <outline type="rss" text="Symfony Blog" title="Symfony Blog"
+        xmlUrl="https://symfony.com/blog/rss.xml" htmlUrl="https://symfony.com/blog"/>
+    </outline>
+    <outline type="rss" text="Uncategorized Feed" title="Uncategorized Feed"
+      xmlUrl="https://example.com/uncategorized.xml" htmlUrl="https://example.com"/>
+  </body>
+</opml>
