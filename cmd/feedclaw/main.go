@@ -54,6 +54,7 @@ func rootCmd() *cobra.Command {
 		searchCmd(),
 		digestCmd(),
 		themeCmd(),
+		serveCmd(),
 		doctorCmd(),
 	)
 	return root
