@@ -157,6 +157,37 @@ func TestSetFullContentAndFTS(t *testing.T) {
 	}
 }
 
+func TestQueryEdgeCases(t *testing.T) {
+	st := newTestStore(t)
+	f, _, _ := st.AddFeed("https://example.com/feed", "Example", "", "Tech")
+	ids := seedArticles(t, st, f.ID, 3)
+
+	// Empty id slices are no-ops.
+	if n, err := st.SetRead(nil, true); err != nil || n != 0 {
+		t.Fatalf("SetRead(nil): n=%d err=%v", n, err)
+	}
+	if n, err := st.SetStarred(nil, true); err != nil || n != 0 {
+		t.Fatalf("SetStarred(nil): n=%d err=%v", n, err)
+	}
+	// Blank search returns no results without touching FTS.
+	if res, err := st.Search("   ", 10); err != nil || res != nil {
+		t.Fatalf("blank search: res=%v err=%v", res, err)
+	}
+	// Missing article.
+	if _, err := st.ArticleByID(999999); err != ErrNotFound {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+	// Limit caps the unread listing.
+	got, err := st.ListUnread(UnreadFilter{Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected limit 2, got %d", len(got))
+	}
+	_ = ids
+}
+
 func TestSearchTitle(t *testing.T) {
 	st := newTestStore(t)
 	f, _, _ := st.AddFeed("https://example.com/feed", "Example", "", "Tech")

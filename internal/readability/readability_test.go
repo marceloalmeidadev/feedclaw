@@ -50,6 +50,21 @@ func TestExtractRejectsNonHTTPScheme(t *testing.T) {
 	}
 }
 
+func TestExtractNon2xx(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	_, err := Extract(context.Background(), srv.Client(), srv.URL, 0)
+	if err == nil {
+		t.Fatal("expected error for non-2xx status")
+	}
+	if !strings.Contains(err.Error(), "404") {
+		t.Fatalf("expected status in error, got %v", err)
+	}
+}
+
 func TestExtractByteLimit(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(articleHTML))
