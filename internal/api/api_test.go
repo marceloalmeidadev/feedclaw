@@ -95,6 +95,30 @@ func TestFeedsCRUD(t *testing.T) {
 	}
 }
 
+func TestImportFeeds(t *testing.T) {
+	srv, _ := newTestServer(t)
+	opml := `<?xml version="1.0"?><opml><body>
+	  <outline text="Go" title="Go">
+	    <outline type="rss" title="Go Blog" xmlUrl="https://go.dev/blog/feed.atom"/>
+	  </outline>
+	  <outline type="rss" title="Loose" xmlUrl="https://example.com/x.xml"/>
+	</body></opml>`
+	rec := do(t, srv, http.MethodPost, "/api/feeds/import", opml)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("import: got %d (%s)", rec.Code, rec.Body.String())
+	}
+	m := decode(t, rec)
+	if int(m["added"].(float64)) != 2 || int(m["total"].(float64)) != 2 {
+		t.Fatalf("expected 2 added/total, got %v", m)
+	}
+
+	// A DOCTYPE payload is rejected by the XXE-safe parser -> 400.
+	rec = do(t, srv, http.MethodPost, "/api/feeds/import", `<!DOCTYPE x><opml><body></body></opml>`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for DOCTYPE, got %d", rec.Code)
+	}
+}
+
 func TestListArticlesAndFilters(t *testing.T) {
 	srv, st := newTestServer(t)
 	_, ids := seed(t, st, 5)

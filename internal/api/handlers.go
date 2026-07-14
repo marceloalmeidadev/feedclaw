@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/marceloalmeidadev/feedclaw/internal/fetch"
+	"github.com/marceloalmeidadev/feedclaw/internal/opml"
 	"github.com/marceloalmeidadev/feedclaw/internal/readability"
 	"github.com/marceloalmeidadev/feedclaw/internal/store"
 )
@@ -43,6 +44,30 @@ func (s *Server) addFeed(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusCreated
 	}
 	writeJSON(w, status, map[string]any{"feed": feed, "created": created})
+}
+
+// importFeeds imports an uploaded OPML document (raw request body). The OPML
+// parser is XXE-safe; the body is size-limited to guard against huge uploads.
+func (s *Server) importFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := opml.Parse(http.MaxBytesReader(w, r.Body, 16<<20))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_opml", err.Error())
+		return
+	}
+	var added, existing int
+	for _, f := range feeds {
+		_, created, err := s.store.AddFeed(f.XMLURL, f.Title, f.HTMLURL, f.Category)
+		if err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		if created {
+			added++
+		} else {
+			existing++
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"total": len(feeds), "added": added, "existing": existing})
 }
 
 func (s *Server) deleteFeed(w http.ResponseWriter, r *http.Request) {

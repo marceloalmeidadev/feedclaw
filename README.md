@@ -8,11 +8,11 @@ pile up" Feedly workflow with: a daily automated fetch, an LLM-grouped daily
 digest, drill-down by theme, and persistent read state — driven either
 conversationally through the OpenClaw agent or visually through the local UI.
 
-> **Status:** Phases 1–5 (engine core + read state + digest + OpenClaw skill +
-> HTTP API). OPML import, feed management, the concurrent SSRF-guarded fetcher,
-> diagnostics, read/star state, full-article extraction, full-text search, the
-> theme-grouped daily digest, the OpenClaw skill/cron, and the local REST API.
-> The Nuxt UI arrives in Phase 6 (see `docs/`).
+> **Status:** Phases 1–6 (engine + read state + digest + skill + API + UI).
+> OPML import, feed management, the concurrent SSRF-guarded fetcher, diagnostics,
+> read/star state, full-article extraction, full-text search, the theme-grouped
+> daily digest, the OpenClaw skill/cron, the local REST API, and the Nuxt web UI.
+> Binary embedding + packaging is Phase 7 (see `docs/`).
 
 ## Architecture
 
@@ -100,8 +100,27 @@ PATCH  /api/articles/read         {ids: [...], read: true|false}
 PATCH  /api/articles/star         {ids: [...], starred: true|false}
 GET    /api/digests?date=         # given date, else most recent
 GET    /api/digests/{date}/themes/{themeId}/articles
+POST   /api/feeds/import          # import an uploaded OPML document (XXE-safe)
 GET    /api/stats                 # unread total, per-category, starred (badges)
 ```
+
+## Web UI
+
+The UI is a Nuxt 4 SPA (`ssr: false`) in `ui/`, built with Nuxt UI. In
+development it proxies `/api` to a running `feedclaw serve`; in production
+(Phase 7) the built SPA is embedded in the Go binary and served same-origin.
+
+```sh
+cd ui
+npm install
+npm run dev        # dev server (proxies /api → 127.0.0.1:8484)
+npm run generate   # static SPA into ui/.output/public (embedded in Phase 7)
+npm run lint
+```
+
+Pages: **Hoje** (digest), **Triagem** (keyboard-driven triage: `j`/`k`/`m`/`s`/
+`o`/`v`/`Shift+A`), **Leitor** (sanitized reader mode), **Feeds**, **Histórico**.
+Feed HTML is sanitized with DOMPurify before rendering (XSS defense).
 
 ## OpenClaw integration
 

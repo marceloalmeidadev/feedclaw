@@ -1,0 +1,27 @@
+{
+  "name": "ui",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "type": "module",
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.117",
+    "@nuxt/ui": "^3.3.7",
+    "dompurify": "^3.4.12",
+    "nuxt": "^4.4.8"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.16.0",
+    "eslint": "^9.39.5",
+    "typescript": "~5.9",
+    "vue-tsc": "^3.3.7"
+  },
+  "private": true
+}
