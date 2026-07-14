@@ -4,6 +4,9 @@
 /feedclaw
 *.test
 
+# UI embedded into the Go binary at release time (make embed-ui)
+/internal/api/dist/
+
 # Coverage & SonarQube scanner artifacts
 coverage.out
 *.cover

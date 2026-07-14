@@ -4,6 +4,7 @@
 package api
 
 import (
+	"io/fs"
 	"log"
 	"net/http"
 
@@ -15,11 +16,13 @@ import (
 type Server struct {
 	store    *store.Store
 	fetchCfg fetch.Config
+	ui       fs.FS // static UI (embedded when built with -tags embedui); nil otherwise
 }
 
-// New builds a Server bound to a store and fetcher config.
+// New builds a Server bound to a store and fetcher config. When the binary was
+// built with the embedded UI, it is served for non-/api routes.
 func New(st *store.Store, cfg fetch.Config) *Server {
-	return &Server{store: st, fetchCfg: cfg}
+	return &Server{store: st, fetchCfg: cfg, ui: embeddedUI}
 }
 
 // Handler returns the fully wired HTTP handler (routes + middleware).
@@ -44,7 +47,7 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /api/stats", s.getStats)
 
-	mux.HandleFunc("/", s.notFound)
+	mux.HandleFunc("/", s.serveUI)
 
 	return recoverMiddleware(authMiddleware(mux))
 }
