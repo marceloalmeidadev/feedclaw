@@ -1,8 +1,8 @@
 ---
 name: feedclaw-digest
 description: >-
-  Fluxo de digest diário do FeedClaw, acordado por um cron on-exit quando o
-  `feedclaw fetch` termina. Lê o relatório da execução e, só se houver novidade,
+  Fluxo de digest diário do FeedClaw, disparado por um cron agendado. Roda o
+  `feedclaw fetch`, lê o `exit_code` do relatório e — só se houver novidade —
   agrupa os não-lidos em temas e salva o digest. Use quando disparado pelo cron
   do digest diário (não para pedidos conversacionais avulsos).
 homepage: https://github.com/marceloalmeidadev/feedclaw
@@ -14,22 +14,22 @@ metadata:
       bins: ["feedclaw"]
 ---
 
-# FeedClaw — digest diário (fluxo on-exit)
+# FeedClaw — digest diário (agendado)
 
-Este fluxo é acordado quando o `feedclaw fetch` agendado termina. O `fetch` é
-determinístico e barato (Go, sem LLM); ele escreve um **relatório JSON** com um
-`exit_code` semântico. **Sua primeira tarefa é ler esse relatório e decidir se
-vale a pena continuar** — na maioria dos dias, não vale, e você não deve gastar o
-modelo.
+Este fluxo roda quando o cron agendado o dispara. O `feedclaw fetch` é
+determinístico e barato (Go, sem LLM) e escreve um **relatório JSON** com um
+`exit_code` semântico. **Sua primeira tarefa é rodar o fetch e decidir, pelo
+`exit_code`, se vale a pena continuar** — na maioria dos dias não vale, e você
+não deve gastar o modelo com a clusterização.
 
-## 0. PRIMEIRO: ler o relatório e abortar se necessário
-
-Leia o relatório da execução (caminho em `$FEEDCLAW_REPORT`, senão
-`$HOME/.config/feedclaw/last_run.json`) e olhe `exit_code`:
+## 0. PRIMEIRO: rodar o fetch e abortar se não houver novidade
 
 ```sh
-cat "${FEEDCLAW_REPORT:-$HOME/.config/feedclaw/last_run.json}"
+feedclaw fetch                                  # escreve o relatório
+cat "$HOME/.config/feedclaw/last_run.json"      # (ou $FEEDCLAW_REPORT, se definido)
 ```
+
+Olhe o `exit_code` do relatório:
 
 | `exit_code` | O que fazer |
 |---|---|
