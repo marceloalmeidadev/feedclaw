@@ -57,8 +57,8 @@ Every unread article is covered by the digest: whatever the agent leaves out of 
 theme lands in an engine-generated `Outros` theme, and `digest save` rejects ids
 that don't exist or are already read. `fetch` returns a **semantic exit code**
 (`0` new · `10` nothing new · `20` partial · `30` network fail · `40` config ·
-`50` locked) and always writes a JSON run report — the contract read by the
-OpenClaw on-exit digest pipeline (see below).
+`50` locked) and always writes a JSON run report — the signal the digest flow
+reads to skip clustering on a quiet day (see below).
 
 ## HTTP API
 
@@ -86,14 +86,24 @@ GET    /api/stats                 # unread total, per-category, starred (badges)
 
 Two skills under `skill/`: **`feedclaw`** (conversational triage — maps requests
 like *"o que saiu hoje?"* or *"me mostra o tema 2"* onto the CLI) and
-**`feedclaw-digest`** (the daily flow, woken by a cron **on-exit** trigger when
-the scheduled `feedclaw fetch` finishes; its first step reads the run report's
-`exit_code` and only clusters when there is something new, so the LLM is never
-woken on a quiet day). Both treat article content as **untrusted data**.
+**`feedclaw-digest`** (the daily digest). Both treat article content as
+**untrusted data**. Install the two skills and put the binary on `PATH` — see
+[`docs/INSTALL.md`](docs/INSTALL.md).
 
-The cron pipeline, exit-code contract, `utilityModel` tiering and the
-operator-scope prerequisite are in
-**[`docs/openclaw-integration.md`](docs/openclaw-integration.md)**.
+Schedule the digest as an OpenClaw cron agent job. It runs `feedclaw fetch` and
+only clusters when there is something new — the `feedclaw-digest` skill reads the
+fetch report's `exit_code` (`0`/`20` proceed; `10`/`30`/`40`/`50` abort), so the
+LLM does no work on a quiet day:
+
+```sh
+openclaw cron add --name feedclaw-digest --cron "0 7 * * *" \
+  --agent main --session-key "agent:main:feedclaw-digest" \
+  --thinking medium --no-deliver \
+  --message "Rode 'feedclaw fetch', depois siga o skill feedclaw-digest."
+```
+
+Route clustering to a cheaper tier by setting `agents.defaults.model.utilityModel`
+in OpenClaw. To deliver the digest to a chat, add `--announce --channel <id>`.
 
 ## Web UI
 
